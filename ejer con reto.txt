@@ -1,0 +1,152 @@
+#include <ESP8266WiFi.h>
+
+const char* ssid = "TP-Link_6066"; // nombre red wifi
+const char* pass = "72403358"; // contraseña de la red wifi
+
+#define RED 4
+#define GREEN 0
+#define BLUE 2
+WiFiServer server(80);
+
+void setup() {
+	pinMode(RED, OUTPUT);
+	pinMode(GREEN, OUTPUT);
+	pinMode(BLUE, OUTPUT);
+	digitalWrite(RED, LOW);
+	digitalWrite(GREEN, LOW);
+	digitalWrite(BLUE, LOW);
+
+	int valueR = LOW;
+	int valueG = LOW;
+	int valueB = LOW;
+	
+	Serial.begin(115200);
+	delay(10);
+
+	//Conexion WiFi
+	Serial.println();
+	Serial.println("Conectando a la red ");
+	Serial.println(ssid);
+
+	WiFi.begin(ssid,pass); // Inicia la conexion
+	while (WiFi.status() != WL_CONNECTED){
+		delay(500);
+		Serial.println(".");
+	}
+	Serial.println();
+	Serial.println("WiFi conectado");
+
+	/*Inicia el server*/	
+	sever.begin();
+	Serial.println("inicia el servidor: ");
+	Serial.print("Para conectarse, utilizar la siguiente URL: ");
+	Serial.print("http://");
+	Serial.print(WiFi.localIP());
+	Serial.println("/");
+}
+
+// loop
+void loop(){
+	WiFiClient client = server.available();
+	if(!client){
+		return;
+	}
+	// Ya encontrado el cliente
+	Serial.println("Nuevo cliente");
+	while(!client.available()){ // Espera para abrir dato del cliente
+		delay(1);
+	}
+	String request = client.readStringUntil('\r');
+	Serial.println(request);
+	client.flush();
+
+	// ----- Asocia request a la accion para ROJO ----- 
+	valueR = LOW;
+	if(request.indexOf("\LEDR=ON") != -1) {
+		digitalWrite(RED, HIGH);
+		value = HIGH;
+	}
+	if(request.indexOf("\LEDR=OFF") != -1) {
+		digitalWrite(RED, LOW);
+		value = LOW;
+	}
+
+	// ----- Asocia request a la accion para VERDE ----- 
+	valueG = LOW;
+	if(request.indexOf("\LEDG=ON") != -1) {
+		digitalWrite(GREEN, HIGH);
+		valueG = HIGH;
+	}
+	if(request.indexOf("\LEDG=OFF") != -1) {
+		digitalWrite(GREEN, LOW);
+		valueG = LOW;
+	}
+	// ----- Asocia request a la accion para AZUL ----- 
+	valueB = LOW;
+	if(request.indexOf("\LEDB=ON") != -1) {
+		digitalWrite(BLUE, HIGH);
+		valueB = HIGH;
+	}
+	if(request.indexOf("\LEDB=OFF") != -1) {
+		digitalWrite(BLUE, LOW);
+		valueB = LOW;
+	}
+
+	//Retorna una respuesta:
+	client.println("http/1.1 200 OK");
+	client.println("Content-Type: text/html");
+	client.println("");
+	client.println("<!DOCTYPE HTML>");
+	client.println("<html>");
+
+
+	//  ----- Inicio LED Rojo ----- 
+
+	client.print("El LED ROJO esta: ");
+
+	if (valueR == HIGH) {
+		client.print("ON - Encendido");
+	}
+	else {
+		client.print("OFF - Apagado");
+	}
+	client.println("<br><br>");
+	client.println("<a href=\"/LEDR=ON\"><button> Encender </button></a>");
+	client.println("<a href=\"/LEDR=OFF\"><button> Apagar </button></a>");
+
+
+	//  ----- Inicio LED Verde ----- 
+
+	client.print("El LED VERDE esta: ");
+
+	if (valueG == HIGH) {
+		client.print("ON - Encendido");
+	}
+	else {
+		client.print("OFF - Apagado");
+	}
+	client.println("<br><br>");
+	client.println("<a href=\"/LEDG=ON\"><button> Encender </button></a>");
+	client.println("<a href=\"/LEDG=OFF\"><button> Apagar </button></a>");
+
+
+	//  ----- Inicio LED Azul ----- 
+
+	client.print("El LED AZUL esta: ");
+
+	if (valueB == HIGH) {
+		client.print("ON - Encendido");
+	}
+	else {
+		client.print("OFF - Apagado");
+	}
+	client.println("<br><br>");
+	client.println("<a href=\"/LEDB=ON\"><button> Encender </button></a>");
+	client.println("<a href=\"/LEDB=OFF\"><button> Apagar </button></a>");
+
+	client.println("</html>");
+
+	delay(1);
+	Serial.println("Cliente desconectado");
+	Serial.println("");
+}
